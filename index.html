@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bracketer - BIO Format ("id","tokens","ner_tags") & Prodigy NER Converter</title>
+  <meta name="description" content="Universal Named Entity Recognition dataset engine: Convert and edit BIO Format CSV, BIO Format JSON (tokens & ner_tags), Prodigy ner_manual JSONL, and Bracket datasets.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-group">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 7 4 4 20 4 20 7"></polyline>
+            <line x1="9" y1="20" x2="15" y2="20"></line>
+            <line x1="12" y1="4" x2="12" y2="20"></line>
+            <path d="M4 11h16"></path>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>
+            <span>Bracketer</span>
+            <span class="badge-prodigy">BIO ("id","tokens","ner_tags")</span>
+          </h1>
+          <p>Universal NER Engine: BIO CSV / JSON (tokens & ner_tags) ⟷ Prodigy ⟷ Bracket Text</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="saveBtn" class="btn btn-primary btn-sm" title="Save current session state to browser storage">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span>Save</span>
+        </button>
+        <button id="downloadPyBtn" class="btn btn-ghost btn-sm" title="Download Python CLI script (bracket_parser.py)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Python CLI</span>
+        </button>
+        <button id="copyBtn" class="btn btn-sm" title="Copy output to clipboard">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>Copy Output</span>
+        </button>
+        <button id="downloadBtn" class="btn btn-emerald btn-sm" title="Download formatted dataset">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span id="downloadBtnLabel">Export BIO CSV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-main">
+
+    <!-- Top Toolbar: Quick Sample Presets & Active Labels -->
+    <div class="toolbar-card">
+      <div class="toolbar-section">
+        <span class="toolbar-label">Samples:</span>
+        <button id="sampleKasanggayahanBtn" class="btn btn-sm btn-primary" title="BicolaNER Kasanggayahan Festival BIO CSV sample">
+          <span>🌟 BicolaNER ("id","tokens","ner_tags")</span>
+        </button>
+        <button id="sampleBioBtn" class="btn btn-sm" title="BIO Format JSON with tokens and ner_tags">
+          <span>📦 BIO JSON</span>
+        </button>
+        <button id="sampleBicol5Btn" class="btn btn-sm" title="Bikol dot 5 (Bulusan/Sorsogon, Enero 28 bracket format)">
+          <span>🌟 bicoldot_5</span>
+        </button>
+        <button id="sampleBicol159Btn" class="btn btn-sm" title="Bikol mail 159 (Pandemic bracket sample)">
+          <span>🌟 bicolmail_159</span>
+        </button>
+        <button id="sampleProdigyBtn" class="btn btn-sm" title="Prodigy ner_manual format sample">
+          <span>⚡ Prodigy JSONL</span>
+        </button>
+        <button id="sampleMultiBtn" class="btn btn-sm" title="Multilingual tech & history bracket samples">
+          <span>📝 Multilingual</span>
+        </button>
+        <button id="sampleRawBtn" class="btn btn-sm" title="Raw bracket text without JSON wrapper">
+          <span>📄 Raw Text</span>
+        </button>
+        <button id="clearBtn" class="btn btn-ghost btn-sm" title="Clear input text">
+          <span>🧹 Clear</span>
+        </button>
+      </div>
+
+      <div class="toolbar-section">
+        <span class="toolbar-label">NER Labels:</span>
+        <div id="labelsContainer" class="labels-container"></div>
+        <div class="tag-input-group">
+          <input type="text" id="newTagInput" placeholder="+ Tag" maxlength="12">
+          <button id="addTagBtn" class="btn btn-ghost btn-sm" style="padding: 0 0.3rem;" title="Add label">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workspace Grid -->
+    <div class="workspace-grid">
+
+      <!-- Left Panel: Input & Settings -->
+      <section class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Input Dataset (BIO CSV / JSON / Prodigy / Bracket Text)</span>
+          </div>
+          <div class="panel-meta">
+            <span class="format-detect-badge" id="detectedFormatBadge">Auto-Detecting Format</span>
+          </div>
+        </div>
+
+        <div class="input-body">
+          <!-- Dropzone -->
+          <div id="dropzone" class="dropzone-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <div class="dropzone-text">
+              <strong>Click to upload</strong> or drag & drop <code>.csv</code> / <code>.jsonl</code> / <code>.json</code> / <code>.txt</code> file here
+            </div>
+            <input type="file" id="fileInput" accept=".csv,.jsonl,.txt,.json" style="display: none;">
+          </div>
+
+          <!-- Text Editor -->
+          <div class="textarea-wrapper">
+            <textarea 
+              id="inputEditor" 
+              class="editor-textarea" 
+              placeholder='Enter your dataset lines in any format:&#10;&#10;1) BIO CSV Format:&#10;"id","tokens","ner_tags"&#10;"0","[&#39;Pupunan&#39;,&#39;nin&#39;,&#39;sarong&#39;,&#39;banal&#39;,&#39;na&#39;,&#39;misa&#39;,&#39;na&#39;,&#39;gigibuhon&#39;,&#39;sa&#39;,&#39;Gibalon&#39;,&#39;Shrine&#39;,&#39;sa&#39;,&#39;Brgy&#39;,&#39;.&#39;,&#39;Siuton&#39;,&#39;,&#39;,&#39;Magallanes&#39;,&#39;,&#39;,&#39;Sorsogon&#39;,&#39;an&#39;,&#39;selebrasyon&#39;,&#39;kan&#39;,&#39;Kasanggayahan&#39;,&#39;Festival&#39;,&#39;2022&#39;,&#39;.&#39;]","[0,0,0,0,0,0,0,0,0,5,6,0,5,6,6,6,6,6,6,0,0,0,0,0,7,0]"&#10;&#10;2) Bracket Annotated JSON:&#10;{"text": "Nawawara puon pa kan [Enero 28]DATE sa [Bulusan]LOC.", "document_id": "bicoldot_5", "order": 3}&#10;&#10;3) BIO JSON / Prodigy JSONL / Raw Text'
+              spellcheck="false"
+            ></textarea>
+          </div>
+
+          <!-- Quick In-place Conversion Bar -->
+          <div class="convert-toolbar">
+            <span class="convert-toolbar-title">Convert Input In-Place:</span>
+            <div class="convert-buttons-group">
+              <button id="convertInputBioCsvBtn" class="btn btn-ghost btn-xs" title="Convert editor content to BIO CSV (&quot;id&quot;,&quot;tokens&quot;,&quot;ner_tags&quot;)">
+                <span>➔ BIO CSV</span>
+              </button>
+              <button id="convertInputBioBtn" class="btn btn-ghost btn-xs" title="Convert editor content to BIO Format JSON">
+                <span>➔ BIO JSON</span>
+              </button>
+              <button id="convertInputBracketBtn" class="btn btn-ghost btn-xs" title="Convert editor content to Bracket Annotated JSONL">
+                <span>➔ Bracket JSONL</span>
+              </button>
+              <button id="convertInputProdigyBtn" class="btn btn-ghost btn-xs" title="Convert editor content to Prodigy ner_manual JSONL">
+                <span>➔ Prodigy JSONL</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Config Drawer -->
+          <div class="input-settings-row">
+            <div class="setting-field">
+              <label for="annotatorInput">Annotator ID (Auto/Custom)</label>
+              <input type="text" id="annotatorInput" placeholder="Leave empty for auto timestamp (e.g. 2026-09-06_09-13-48)">
+            </div>
+            <div class="setting-field">
+              <label for="sessionInput">Session ID (Auto/Custom)</label>
+              <input type="text" id="sessionInput" placeholder="Leave empty for auto timestamp (e.g. 2026-09-06_09-13-48)">
+            </div>
+            <div class="setting-field">
+              <label for="timestampStyleSelect">Timestamp Format</label>
+              <select id="timestampStyleSelect" class="setting-select">
+                <option value="datetime" selected>Full Timestamp (YYYY-MM-DD_HH-mm-ss)</option>
+                <option value="date">Date Only (YYYY-MM-DD)</option>
+              </select>
+            </div>
+            <div class="setting-field">
+              <label for="hashSignSelect">32-Bit Hash Format</label>
+              <select id="hashSignSelect" class="setting-select">
+                <option value="signed" selected>Signed Integer (e.g. -844616616)</option>
+                <option value="unsigned">Unsigned Integer (e.g. 3450350680)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Multi-tab Output & Inspection -->
+      <section class="panel-card">
+        <div class="panel-header">
+          <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="visualTab">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>Visual Preview</span>
+            </button>
+            <button class="tab-btn" data-tab="tokensTab">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Token Matrix & BIO Tags</span>
+            </button>
+            <button class="tab-btn" data-tab="jsonTab">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+              <span>BIO & Dataset Output</span>
+            </button>
+            <button class="tab-btn" data-tab="statsTab">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              <span>Metrics & Tag IDs</span>
+            </button>
+          </div>
+
+          <div class="panel-meta">
+            <span class="pill-stat"><span id="statRecordCount">0</span> recs</span>
+            <span class="pill-stat"><span id="statEntityCount">0</span> entities</span>
+            <span class="pill-stat"><span id="statTokenCount">0</span> tokens</span>
+          </div>
+        </div>
+
+        <div class="output-body">
+          <!-- Visual Preview Tab -->
+          <div id="visualTab" class="tab-content active">
+            <div id="visualPreviewContainer"></div>
+          </div>
+
+          <!-- Token Matrix Tab -->
+          <div id="tokensTab" class="tab-content">
+            <div id="tokensContainer"></div>
+          </div>
+
+          <!-- Dataset Output Tab (BIO CSV / BIO JSON / Prodigy / Bracket) -->
+          <div id="jsonTab" class="tab-content">
+            <div class="code-viewer-container">
+              <div class="code-viewer-header">
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                  <span style="font-weight: 600;">Schema:</span>
+                  <select id="schemaFormatSelect" class="setting-select-sm" style="font-weight: 700; color: #a5b4fc; background: var(--bg-surface-elevated); border-color: rgba(99, 102, 241, 0.4);">
+                    <option value="bio_csv" selected>BIO CSV ("id","tokens","ner_tags")</option>
+                    <option value="bio">BIO JSON (Integer Tags: [0, 5, 6, 7])</option>
+                    <option value="bio_str">BIO JSON (String Tags: ["O", "B-LOC", ...])</option>
+                    <option value="prodigy">Prodigy ner_manual JSONL</option>
+                    <option value="bracket">Bracket Annotated JSONL</option>
+                  </select>
+                  <span>Layout:</span>
+                  <select id="outputFormatSelect" class="setting-select-sm">
+                    <option value="compact" selected>Compact (1 Line/Record)</option>
+                    <option value="pretty">Pretty Formatted</option>
+                  </select>
+                  <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.74rem; cursor: pointer; color: var(--text-secondary);">
+                    <input type="checkbox" id="wrapCodeToggle">
+                    <span>Wrap Text</span>
+                  </label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                  <span class="pill-stat" id="jsonLineBadge" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3);">1 line</span>
+                  <span id="jsonRecordBadge">0 records</span>
+                </div>
+              </div>
+              <pre id="jsonOutputPre" class="code-pre"></pre>
+            </div>
+          </div>
+
+          <!-- Stats / Summary Tab -->
+          <div id="statsTab" class="tab-content">
+            <div id="statsDetailContainer"></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Edit Record Modal -->
+  <div id="editModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-title-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 id="modalTitle" class="modal-title">Edit Annotation & BIO Tags</h3>
+            <p id="modalSubtitle" class="modal-subtitle">Record #1 • bicoldot_5</p>
+          </div>
+        </div>
+        <button id="modalCloseBtn" class="modal-close-btn" title="Close (Esc)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Quick Tag Toolbar -->
+        <div class="modal-quick-tags">
+          <span class="modal-section-label">Quick Tag Selection:</span>
+          <div id="modalTagButtons" class="modal-tags-list"></div>
+          <span class="modal-hint">Select text below and click a tag to wrap with <code>[text]TAG</code></span>
+        </div>
+
+        <!-- Bracket Text Editor -->
+        <div class="modal-field-group">
+          <label for="modalTextInput" class="modal-field-label">Bracket Annotated Text</label>
+          <textarea id="modalTextInput" class="modal-textarea" rows="5" spellcheck="false" placeholder="Enter bracket annotated text, e.g. [Barack Obama]PER was president of [USA]LOC."></textarea>
+        </div>
+
+        <!-- Metadata Fields -->
+        <div class="modal-metadata-row">
+          <div class="modal-field-group">
+            <label for="modalDocIdInput" class="modal-field-label">Document ID</label>
+            <input type="text" id="modalDocIdInput" class="modal-input" placeholder="e.g. bicoldot_5">
+          </div>
+          <div class="modal-field-group">
+            <label for="modalOrderInput" class="modal-field-label">Order / Index</label>
+            <input type="number" id="modalOrderInput" class="modal-input" placeholder="0">
+          </div>
+          <div class="modal-field-group">
+            <label for="modalIdInput" class="modal-field-label">BIO Record ID</label>
+            <input type="text" id="modalIdInput" class="modal-input" placeholder="e.g. 0">
+          </div>
+        </div>
+
+        <!-- Real-time Live Highlight Preview -->
+        <div class="modal-preview-card">
+          <div class="modal-preview-header">
+            <span class="modal-section-label">Live Entity Highlight Preview</span>
+            <span id="modalSpanCountBadge" class="pill-stat">0 entities</span>
+          </div>
+          <div id="modalLivePreviewContent" class="modal-preview-content"></div>
+        </div>
+
+        <!-- Real-time Live BIO Tag Sequence Matrix in Modal -->
+        <div class="modal-preview-card" style="margin-top: 0.75rem;">
+          <div class="modal-preview-header">
+            <span class="modal-section-label">Live BIO Token Sequence (ner_tags: word / tag / ID)</span>
+            <span id="modalTokenCountBadge" class="pill-stat">0 tokens</span>
+          </div>
+          <div id="modalBioSequenceContent" class="modal-bio-sequence-box"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="modal-keyboard-hint">
+          <span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to save • <kbd>Esc</kbd> to cancel</span>
+        </div>
+        <div class="modal-actions">
+          <button id="modalCancelBtn" class="btn btn-ghost btn-sm">Cancel</button>
+          <button id="modalSaveBtn" class="btn btn-primary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Save Changes</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
