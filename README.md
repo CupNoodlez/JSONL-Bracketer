@@ -183,29 +183,6 @@ JSONL-Bracketer/
 ├── LICENSE               # MIT Open Source License
 └── README.md             # Project documentation
 ```
-
----
-
-## 🌐 Deploy to GitHub Pages
-
-You can host the interactive Web Studio online for free using GitHub Pages:
-
-1. Push this repository to your GitHub account.
-2. Go to your repository on GitHub: **Settings** ➔ **Pages**.
-3. Under **Branch**, select `main` (or `master`) and `/ (root)`.
-4. Click **Save**. Your Bracketer web app will be live at `https://<your-username>.github.io/<repo-name>/` within a few minutes!
-
----
-
-## 🤝 Contributing
-
-Contributions, bug reports, and feature requests are welcome!
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m 'Add amazing feature'`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a Pull Request.
-
 ---
 
 ## 📄 License
