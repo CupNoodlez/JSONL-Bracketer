@@ -218,26 +218,26 @@ def parse_record(line_str, labels="PER|LOC|ORG|DATE", signed_hash=True, default_
     data = None
     is_csv_row = False
 
-    # Check if CSV line: e.g. "0","['Pupunan','nin',...]","[0,0,0,...]"
-    if line_str.startswith('"') and '",' in line_str:
+    # Check if CSV line: e.g. "0","['Pupunan','nin',...]","[0,0,0,...]" or 0,"['Pupunan',...]","[0,...]"
+    if (line_str.startswith('"') and '",' in line_str) or (('"' in line_str or '[' in line_str) and ',' in line_str):
         try:
             reader = csv.reader(io.StringIO(line_str))
             row = next(reader)
-            if len(row) >= 3:
-                rec_id = row[0]
-                tokens_raw = row[1]
-                ner_tags_raw = row[2]
+            if len(row) >= 3 and any(c.strip().startswith('[') for c in row[1:]):
+                rec_id = row[0].strip(' "\'')
+                tokens_raw = row[1].strip()
+                ner_tags_raw = row[2].strip()
                 
                 # Parse python/json list syntax
                 try:
                     tokens_list = ast.literal_eval(tokens_raw) if tokens_raw.startswith('[') else json.loads(tokens_raw)
                 except Exception:
-                    tokens_list = [t.strip("'\"") for t in tokens_raw.strip('[]').split(',') if t.strip()]
+                    tokens_list = [t.strip("'\" ") for t in tokens_raw.strip('[]').split(',') if t.strip()]
                     
                 try:
                     tags_list = ast.literal_eval(ner_tags_raw) if ner_tags_raw.startswith('[') else json.loads(ner_tags_raw)
                 except Exception:
-                    tags_list = [t.strip("'\"") for t in ner_tags_raw.strip('[]').split(',') if t.strip()]
+                    tags_list = [t.strip("'\" ") for t in ner_tags_raw.strip('[]').split(',') if t.strip()]
                     tags_list = [int(t) if t.isdigit() else t for t in tags_list]
                     
                 data = {

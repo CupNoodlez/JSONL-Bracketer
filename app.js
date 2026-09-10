@@ -118,35 +118,72 @@ function hashString32(str, signed = true) {
   return signed ? (hash | 0) : (hash >>> 0);
 }
 
-// Helper to parse Python / JS list string e.g. "['a', 'b']" or "[0, 5, 6]"
+// Helper to parse Python / JS list string e.g. "['a', 'b']", "[\"a\", \"b\"]", or "[0, 5, 6]"
 function parseListString(str) {
   if (!str) return [];
   const trimmed = str.trim();
   if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    // 1. Try standard JSON parse directly
     try {
-      // Try JSON first (e.g. ["a", "b"])
+      return JSON.parse(trimmed);
+    } catch (e) {}
+
+    // 2. Try JSON parse converting single quotes to double quotes
+    try {
       return JSON.parse(trimmed.replace(/'/g, '"'));
-    } catch (e) {
-      // Manual regex fallback for Python list format e.g. ['Pupunan', 'nin']
-      const inner = trimmed.slice(1, -1);
-      const items = [];
-      const regex = /(?:'([^']*)')|(?:"([^"]*)")|([^,\s]+)/g;
-      let m;
-      while ((m = regex.exec(inner)) !== null) {
-        if (m[1] !== undefined) items.push(m[1]);
-        else if (m[2] !== undefined) items.push(m[2]);
-        else if (m[3] !== undefined) {
-          const val = m[3].trim();
+    } catch (e) {}
+
+    // 3. Fallback: Robust tokenizer for Python list representations e.g. ['it\'s', "hello", 0, 'B-PER']
+    const inner = trimmed.slice(1, -1).trim();
+    if (!inner) return [];
+
+    const items = [];
+    let i = 0;
+    const len = inner.length;
+
+    while (i < len) {
+      // Skip whitespace and commas
+      while (i < len && (inner[i] === ' ' || inner[i] === '\t' || inner[i] === ',')) {
+        i++;
+      }
+      if (i >= len) break;
+
+      const quoteChar = inner[i];
+      if (quoteChar === "'" || quoteChar === '"') {
+        i++; // skip opening quote
+        let val = '';
+        while (i < len) {
+          if (inner[i] === '\\' && i + 1 < len) {
+            val += inner[i + 1];
+            i += 2;
+          } else if (inner[i] === quoteChar) {
+            i++; // skip closing quote
+            break;
+          } else {
+            val += inner[i];
+            i++;
+          }
+        }
+        items.push(val);
+      } else {
+        // Raw token (numbers, unquoted strings like B-PER, etc.)
+        let val = '';
+        while (i < len && inner[i] !== ',' && inner[i] !== ']' && inner[i] !== ' ' && inner[i] !== '\t') {
+          val += inner[i];
+          i++;
+        }
+        val = val.trim();
+        if (val) {
           items.push(/^\d+$/.test(val) ? parseInt(val, 10) : val);
         }
       }
-      return items;
     }
+    return items;
   }
   return [trimmed];
 }
 
-// Helper to parse CSV line containing quoted items
+// Helper to parse CSV line containing quoted or unquoted items
 function parseCsvLine(line) {
   const result = [];
   let cur = '';
@@ -161,13 +198,13 @@ function parseCsvLine(line) {
         inQuotes = !inQuotes;
       }
     } else if (char === ',' && !inQuotes) {
-      result.push(cur);
+      result.push(cur.trim());
       cur = '';
     } else {
       cur += char;
     }
   }
-  result.push(cur);
+  result.push(cur.trim());
   return result;
 }
 
@@ -347,19 +384,21 @@ function parseRecord(line, options = {}, defaultIndex = 0) {
   let data = null;
   let isCsvFormat = false;
 
-  // 1. Check if CSV row: e.g. "0","['Pupunan', 'nin']","[0, 0, 5]"
-  if (lineStr.startsWith('"') && lineStr.includes('","')) {
+  // 1. Check if CSV row: e.g. "0","['Pupunan', 'nin']","[0, 0, 5]" or 0,"['Pupunan',...]","[0,...]"
+  if (!lineStr.startsWith('{') && (lineStr.includes('","') || (lineStr.includes(',') && lineStr.includes('[')))) {
     const cols = parseCsvLine(lineStr);
-    if (cols.length >= 3) {
-      const recId = cols[0].replace(/^"|"$/g, '');
+    if (cols.length >= 3 && cols.some(c => c.trim().startsWith('['))) {
+      const recId = cols[0].replace(/^"|"$/g, '').trim();
       const tokensList = parseListString(cols[1]);
       const nerTagsList = parseListString(cols[2]);
-      data = {
-        id: recId,
-        tokens: tokensList,
-        ner_tags: nerTagsList
-      };
-      isCsvFormat = true;
+      if (Array.isArray(tokensList) && Array.isArray(nerTagsList)) {
+        data = {
+          id: recId,
+          tokens: tokensList,
+          ner_tags: nerTagsList
+        };
+        isCsvFormat = true;
+      }
     }
   }
 
